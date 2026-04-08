@@ -2,8 +2,10 @@
 Descrição do ProjetoEste projeto consiste no desenvolvimento de um Simulador de Gerenciamento Dinâmico de Memória desenvolvido em Java. 
 O sistema simula o funcionamento de uma Heap de memória, lidando com requisições aleatórias de alocação e algoritmos de liberação de espaço.
 
-O trabalho integra duas disciplinas:Engenharia de Software: Focada na gestão ágil, documentação de requisitos e papéis da equipe.
-Sistemas Operacionais: Focada na implementação de algoritmos de alocação, gerência de memória e concorrência (Threads/Semáforos).
+O trabalho integra duas disciplinas: 
+**Engenharia de Software:** Focada na gestão ágil, documentação de requisitos e papéis da equipe.
+
+**Sistemas Operacionais:** Focada na implementação de algoritmos de alocação, gerência de memória e concorrência (Threads/Semáforos).
 
 **FuncionalidadesSimulação de Heap:** Vetor de inteiros representando a memória física.
 
