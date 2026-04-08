@@ -33,10 +33,12 @@ Diagramação: [Ex: Lucidchart / StarUML] (UML 2.0)
 Documentação: Markdown e Javadoc
 
 
-Estrutura das Sprints
+Estrutura das Sprints: O projeto foi dividido em 10 Sprints de aproximadamente, com uma semana cada.
 
-O projeto foi dividido em 10 Sprints de aproximadamente, com uma semana cada.
-Sprint 1-2: Concepção, Visão do Produto e Requisitos.
-Sprint 3-5: Desenvolvimento da versão Sequencial e Seminário Parcial.
-Sprint 6-8: Implementação de Concorrência e Sincronismo.
-Sprint 9-10: Coleta de dados, análise comparativa e Seminário Final.
+**Sprint 1-2:** Concepção, Visão do Produto e Requisitos.
+
+**Sprint 3-5:** Desenvolvimento da versão Sequencial e Seminário Parcial.
+
+**Sprint 6-8:** Implementação de Concorrência e Sincronismo.
+
+**Sprint 9-10:** Coleta de dados, análise comparativa e Seminário Final.
