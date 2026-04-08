@@ -6,11 +6,17 @@ O trabalho integra duas disciplinas:Engenharia de Software: Focada na gestão á
 Sistemas Operacionais: Focada na implementação de algoritmos de alocação, gerência de memória e concorrência (Threads/Semáforos).
 
 **FuncionalidadesSimulação de Heap:** Vetor de inteiros representando a memória física.
+
 **Gerador de Carga:** Criação de requisições com IDs únicos e tamanhos variáveis.
+
 **Algoritmos de Alocação:** Implementação de políticas como [First-Fit / Best-Fit].
+
 **Liberação Random:** Remoção aleatória de variáveis para liberar 30% da heap quando cheia.
+
 **Modo Concorrente:** Suporte a múltiplas threads disputando a memória com sincronização via [Semáforos/Monitores].
+
 **Análise de Desempenho:** Comparativo entre as versões sequencial e paralela.
+
 
 Tecnologias e Ferramentas
 
