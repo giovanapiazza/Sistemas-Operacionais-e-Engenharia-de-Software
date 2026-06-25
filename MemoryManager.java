@@ -5,140 +5,231 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-class MemoryManager {
+public class MemoryManager {
     private int[] heap;
-    private Map<Integer, Block> allocations;
+    private final Map<Integer, Block> allocations;
+    private final Random random;
     private int nextId;
-    private Random random;
 
-    // Estatísticas
-    private int totalRequestsAttended;
+    private long totalAllocationRequests;
+    private long totalRequestsAttended;
+    private long totalAllocationFailures;
     private long totalAllocatedBytes;
+    private long totalFreedBytes;
     private int totalRemovedVariables;
     private int compactionsCount;
 
-    // Representa um bloco alocado na memória
     private static class Block {
         int id;
         int startIndex;
-        int length; // Em inteiros (cada inteiro = 4 bytes)
+        int length;
+        int requestedSizeBytes;
 
-        Block(int id, int startIndex, int length) {
+        Block(int id, int startIndex, int length, int requestedSizeBytes) {
             this.id = id;
             this.startIndex = startIndex;
             this.length = length;
+            this.requestedSizeBytes = requestedSizeBytes;
         }
     }
 
     public MemoryManager(int sizeInKb) {
-        // Cada inteiro equivale a 4 bytes, logo: sizeInKb * 1024 bytes / 4 bytes = tamanho do vetor
         int arraySize = (sizeInKb * 1024) / 4;
+
         this.heap = new int[arraySize];
         this.allocations = new HashMap<>();
-        this.nextId = 1;
         this.random = new Random();
+        this.nextId = 1;
     }
 
-    public void allocate(int sizeInBytes) {
-        // Converte o tamanho pedido em bytes para a quantidade de inteiros necessários (teto da divisão)
-        int requiredInts = (int) Math.ceil(sizeInBytes / 4.0);
-        
-        int startIndex = findFreeSpace(requiredInts);
+    public synchronized int allocate(int sizeInBytes) {
+        totalAllocationRequests++;
 
-        // Se não houver espaço suficiente, chama o algoritmo de liberação e compactação
-        if (startIndex == -1) {
-            freeRandomMemory();
-            compact();
-            startIndex = findFreeSpace(requiredInts);
-            
-            // Se mesmo após limpar e compactar não couber, ignoramos a requisição (ou você pode tratar de outra forma)
-            if (startIndex == -1) return; 
+        if (sizeInBytes <= 0) {
+            totalAllocationFailures++;
+            return -1;
         }
 
-        // Realiza a alocação
+        int requiredInts = (int) Math.ceil(sizeInBytes / 4.0);
+
+        if (requiredInts > heap.length) {
+            totalAllocationFailures++;
+            return -1;
+        }
+
+        int startIndex = findBestFit(requiredInts);
+
+        if (startIndex == -1) {
+            freeRandomMemoryInternal();
+            compactInternal();
+
+            startIndex = findBestFit(requiredInts);
+
+            if (startIndex == -1) {
+                totalAllocationFailures++;
+                return -1;
+            }
+        }
+
         int currentId = nextId++;
-        Block newBlock = new Block(currentId, startIndex, requiredInts);
+
+        Block newBlock = new Block(
+                currentId,
+                startIndex,
+                requiredInts,
+                sizeInBytes
+        );
+
         allocations.put(currentId, newBlock);
 
-        // Escreve o ID em todas as posições da heap ocupadas pela variável
         for (int i = startIndex; i < startIndex + requiredInts; i++) {
             heap[i] = currentId;
         }
 
-        // Atualiza estatísticas
         totalRequestsAttended++;
         totalAllocatedBytes += sizeInBytes;
+
+        return currentId;
     }
 
-    // Busca espaço contíguo usando First-Fit
-    private int findFreeSpace(int requiredInts) {
-        int consecutiveFree = 0;
-        int startIndex = -1;
+    public synchronized boolean free(int allocationId) {
+        Block block = allocations.remove(allocationId);
 
-        for (int i = 0; i < heap.length; i++) {
-            if (heap[i] == 0) { // 0 indica espaço livre
-                if (consecutiveFree == 0) startIndex = i;
-                consecutiveFree++;
-                if (consecutiveFree == requiredInts) {
-                    return startIndex;
+        if (block == null) {
+            return false;
+        }
+
+        clearBlock(block);
+
+        totalRemovedVariables++;
+        totalFreedBytes += block.requestedSizeBytes;
+
+        return true;
+    }
+
+    public synchronized int freeRandomMemory() {
+        return freeRandomMemoryInternal();
+    }
+
+    public synchronized void compact() {
+        compactInternal();
+    }
+
+    private int findBestFit(int requiredInts) {
+        int bestStartIndex = -1;
+        int bestBlockSize = Integer.MAX_VALUE;
+
+        int i = 0;
+
+        while (i < heap.length) {
+            if (heap[i] != 0) {
+                i++;
+                continue;
+            }
+
+            int freeStart = i;
+            int freeSize = 0;
+
+            while (i < heap.length && heap[i] == 0) {
+                freeSize++;
+                i++;
+            }
+
+            if (freeSize >= requiredInts && freeSize < bestBlockSize) {
+                bestStartIndex = freeStart;
+                bestBlockSize = freeSize;
+
+                if (freeSize == requiredInts) {
+                    break;
                 }
-            } else {
-                consecutiveFree = 0;
             }
         }
-        return -1;
+
+        return bestStartIndex;
     }
 
-    // Libera pelo menos 30% da memória aleatoriamente
-    private void freeRandomMemory() {
-        int targetToFree = (int) (heap.length * 0.30); // 30% do vetor de inteiros
+    private int freeRandomMemoryInternal() {
+        if (allocations.isEmpty()) {
+            return 0;
+        }
+
+        int targetToFree = (int) Math.ceil(heap.length * 0.30);
         int freedSpace = 0;
+        int removedCount = 0;
 
         List<Integer> allocatedIds = new ArrayList<>(allocations.keySet());
         Collections.shuffle(allocatedIds, random);
 
         for (int id : allocatedIds) {
-            if (freedSpace >= targetToFree) break;
+            if (freedSpace >= targetToFree) {
+                break;
+            }
 
             Block block = allocations.remove(id);
+
             if (block != null) {
-                // Zera as posições na heap
-                for (int i = block.startIndex; i < block.startIndex + block.length; i++) {
-                    heap[i] = 0;
-                }
+                clearBlock(block);
+
                 freedSpace += block.length;
                 totalRemovedVariables++;
+                totalFreedBytes += block.requestedSizeBytes;
+                removedCount++;
             }
+        }
+
+        return removedCount;
+    }
+
+    private void clearBlock(Block block) {
+        for (int i = block.startIndex; i < block.startIndex + block.length; i++) {
+            heap[i] = 0;
         }
     }
 
-    // Compactação: move todas as variáveis para a esquerda para eliminar fragmentação externa
-    private void compact() {
+    private void compactInternal() {
         compactionsCount++;
+
         int writeIndex = 0;
 
-        // Lista ordenada pelo startIndex para manter a coerência ao compactar
         List<Block> activeBlocks = new ArrayList<>(allocations.values());
-        activeBlocks.sort((b1, b2) -> Integer.compare(b1.startIndex, b2.startIndex));
 
-        // Zera o heap inteiro para reescrever
-        this.heap = new int[heap.length];
+        activeBlocks.sort((b1, b2) ->
+                Integer.compare(b1.startIndex, b2.startIndex)
+        );
+
+        int[] compactedHeap = new int[heap.length];
 
         for (Block block : activeBlocks) {
             block.startIndex = writeIndex;
+
             for (int i = 0; i < block.length; i++) {
-                heap[writeIndex++] = block.id;
+                compactedHeap[writeIndex++] = block.id;
             }
         }
+
+        heap = compactedHeap;
     }
 
-    public void printSummary(long executionTimeMs) {
-        double avgSize = totalRequestsAttended == 0 ? 0 : (double) totalAllocatedBytes / totalRequestsAttended;
-        System.out.println("\n--- Resumo da Execução ---");
+    public synchronized int getActiveAllocationsCount() {
+        return allocations.size();
+    }
+
+    public synchronized void printSummary(long executionTimeMs) {
+        double avgSize = totalRequestsAttended == 0
+                ? 0
+                : (double) totalAllocatedBytes / totalRequestsAttended;
+
+        System.out.println("\n--- Resumo da Execução Concorrente ---");
         System.out.println("Tempo total de execução: " + executionTimeMs + " ms");
+        System.out.println("Total de requisições tentadas: " + totalAllocationRequests);
         System.out.println("Total de requisições atendidas: " + totalRequestsAttended);
-        System.out.println("Tamanho médio das variáveis alocadas: " + String.format("%.2f", avgSize) + " bytes");
+        System.out.println("Falhas por falta de memória: " + totalAllocationFailures);
+        System.out.println("Tamanho médio das variáveis alocadas: "
+                + String.format("%.2f", avgSize) + " bytes");
+        System.out.println("Total de bytes alocados: " + totalAllocatedBytes);
+        System.out.println("Total de bytes liberados: " + totalFreedBytes);
         System.out.println("Total de variáveis removidas: " + totalRemovedVariables);
+        System.out.println("Blocos ainda ativos no final: " + allocations.size());
         System.out.println("Chamadas de compactação: " + compactionsCount);
     }
 }
