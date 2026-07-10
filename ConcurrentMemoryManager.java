@@ -38,7 +38,6 @@ public class ConcurrentMemoryManager {
         this.random = new Random();
     }
 
-    // REMOVIDO o 'synchronized' do método para permitir busca paralela!
     public int allocate(int sizeInBytes) {
         int requiredInts = (int) Math.ceil(sizeInBytes / 4.0);
 
@@ -49,7 +48,7 @@ public class ConcurrentMemoryManager {
 
         // Laço de Repetição: Se formos roubados, voltamos para o início e tentamos de novo!
         while (true) {
-            // 1. BUSCA OTIMISTA: Procura o melhor buraco FORA do lock (Em paralelo)
+            // 1. BUSCA PARALELA: Procura o melhor buraco FORA do lock 
             int candidateIndex = findFreeSpace(requiredInts);
 
             // 2. Entra no lock apenas para validar ou resolver falta de memória
@@ -83,10 +82,9 @@ public class ConcurrentMemoryManager {
                     }
                 }
                 
-                // Caso 3 (A MÁGICA): candidateIndex não era -1, mas isSpaceStillFree deu FALSO.
-                // Isso significa que outra thread "roubou" nosso buraco.
+                // Caso 3 : candidateIndex não era -1, mas isSpaceStillFree deu FALSO.
+                // Isso significa que outra thread roubou nosso buraco.
                 // O código simplesmente ignora, o bloco synchronized termina aqui, 
-                // e o laço 'while' faz a thread tentar a busca novamente FORA do lock!
             }
         }
     }

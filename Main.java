@@ -1,33 +1,48 @@
 import java.util.Random;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        // Configurações do simulador
-        int tamanhoHeapKB = 500; 
-        int minSizeBytes = 16;
-        int maxSizeBytes = 1024; // 1 KB
-        int totalRequisicoes = 100000; 
+        Scanner scanner = new Scanner(System.in);
 
+        System.out.println("==================================================");
+        System.out.println("   SIMULADOR DE GERENCIAMENTO DE MEMÓRIA (HEAP)   ");
+        System.out.println("==================================================");
+
+        // Coleta de dados do usuário
+        System.out.print("Digite o tamanho da Heap (em KB): ");
+        int tamanhoHeapKB = scanner.nextInt();
+
+        System.out.print("Digite o tamanho mínimo da alocação (em bytes): ");
+        int minSizeBytes = scanner.nextInt();
+
+        System.out.print("Digite o tamanho máximo da alocação (em bytes): ");
+        int maxSizeBytes = scanner.nextInt();
+
+        System.out.print("Digite o número total de requisições: ");
+        int totalRequisicoes = scanner.nextInt();
+
+        System.out.print("Digite o número de threads para a simulação paralela: ");
+        int numeroThreads = scanner.nextInt();
+
+        System.out.println("\n--------------------------------------------------");
+
+        // 1. Execução Sequencial
         System.out.println("Iniciando simulação SEQUENCIAL (Best-Fit) com Heap de " + tamanhoHeapKB + " KB");
-
         MemoryManager manager = new MemoryManager(tamanhoHeapKB);
         Random random = new Random();
 
-        long startTime = System.currentTimeMillis();
-
-        // Loop de simulação de carga de trabalho (Apenas aloca!)
+        long startTimeSeq = System.currentTimeMillis();
         for (int i = 0; i < totalRequisicoes; i++) {
             int requestSize = random.nextInt((maxSizeBytes - minSizeBytes) + 1) + minSizeBytes;
             manager.allocate(requestSize);
         }
+        long endTimeSeq = System.currentTimeMillis();
+        manager.printSummary(endTimeSeq - startTimeSeq);
 
-        long endTime = System.currentTimeMillis();
+        System.out.println("--------------------------------------------------");
 
-        // Exibe o resumo final
-        manager.printSummary(endTime - startTime);
-
-        // Dispara a simulação paralela
-        int numeroThreads = 6;
+        // 2. Execução Paralela
         ConcurrentSimulation.run(
                 tamanhoHeapKB,
                 minSizeBytes,
@@ -35,5 +50,7 @@ public class Main {
                 totalRequisicoes,
                 numeroThreads
         );
+        
+        scanner.close();
     }
 }

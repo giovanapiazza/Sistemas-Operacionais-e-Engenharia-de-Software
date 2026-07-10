@@ -10,7 +10,6 @@ public class BenchmarkRunner {
         // Os cenários de threads
         int[] cenariosThreads = {2, 4, 6, 8, 12, 16, 24, 32};
         
-        // Reduzi para 5 repetições para o teste completo não demorar horas
         int repeticoesPorCenario = 5; 
         
         int totalRequisicoes = 100000; 
@@ -31,7 +30,7 @@ public class BenchmarkRunner {
                 System.out.println("==================================================");
 
                 // -----------------------------------------------------------
-                // 1. TESTE SEQUENCIAL (A nossa linha de base)
+                // 1. TESTE SEQUENCIAL 
                 // -----------------------------------------------------------
                 System.out.println("\n[Modo Sequencial] Executando...");
                 for (int rodada = 1; rodada <= repeticoesPorCenario; rodada++) {
@@ -47,7 +46,7 @@ public class BenchmarkRunner {
                     long endTime = System.nanoTime();
                     long tempoGasto = (endTime - startTime) / 1_000_000;
                     
-                    // Salvamos informando que é "Sequencial" e Thread "1" (simbólico)
+                    // Salvamos informando que é "Sequencial" e Thread "1" 
                     writer.println(heapSize + ",Sequencial,1," + rodada + "," + tempoGasto);
                     writer.flush();
                     System.out.print(tempoGasto + "ms ");

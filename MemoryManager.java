@@ -41,10 +41,10 @@ class MemoryManager {
 
     // Agora retorna o ID alocado ou -1 se falhar
     public int allocate(int sizeInBytes) {
-        // Converte o tamanho pedido em bytes para a quantidade de inteiros necessários (teto da divisão)
+        // Converte o tamanho pedido em bytes para a quantidade de inteiros necessários
         int requiredInts = (int) Math.ceil(sizeInBytes / 4.0);
         
-        int startIndex = findFreeSpace(requiredInts); // Agora usa Best-Fit
+        int startIndex = findFreeSpace(requiredInts); // Usa Best-Fit
 
         // Se não houver espaço suficiente, chama o algoritmo de liberação e compactação
         if (startIndex == -1) {
@@ -73,7 +73,7 @@ class MemoryManager {
         return currentId;
     }
 
-    // Novo método para liberar variáveis ativamente (Simula o ciclo de vida)
+    // Método para liberar variáveis ativamente 
     public void free(int id) {
         Block block = allocations.remove(id);
         if (block != null) {
