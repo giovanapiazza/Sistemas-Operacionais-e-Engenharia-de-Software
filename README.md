@@ -28,7 +28,7 @@ Gestão de Projeto: Scrum & Kanban
 
 Versionamento: Git & GitHub
 
-Diagramação: [Ex: Lucidchart / StarUML] (UML 2.0)
+Diagramação: Mermaid
 
 Documentação: Markdown e Javadoc
 
